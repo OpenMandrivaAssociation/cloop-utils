@@ -1,32 +1,32 @@
 %define clname      cloop
-%define clver       1.02
+%define clver       2.06
 %define clminorver  1
-%define release     9mdk
+%define release     %mkrel 1
 
-Name:               %{clname}-utils
-Version:            %{clver}
-Release:            %{release}
-Summary:            Utilities for the creation and extraction of compressed loop images
-License:            GPL
-Group:              File tools
-URL:                http://www.knoppix.net/
-Source0:            http://developer.linuxtag.net/knoppix/sources/%{clname}_%{clver}-%{clminorver}.tar.gz
-Patch0:             cloop-1.02-write-to-file-ASAP.patch
-Patch1:             mkfile-cloop.patch
-Patch2:             cloop-1.02-ppc-build-fix.patch
-BuildRequires:      zlib-devel
-BuildRoot:          %{_tmppath}/%{name}-root
+Name:		%{clname}-utils
+Version:	%{clver}
+Release:	%{release}
+Summary:	Utilities for the creation and extraction of compressed loop images
+License:	GPL
+Group:		File tools
+URL:		http://debian-knoppix.alioth.debian.org/sources/
+Source0:	http://debian-knoppix.alioth.debian.org/sources/%{clname}_%{clver}-%{clminorver}.tar.bz2
+Patch0:		cloop-2.06-write-to-file-ASAP.patch
+Patch1:		mkfile-cloop.patch
+Patch2:		cloop-2.06-x86-64-build-fix.patch
+BuildRequires:	zlib-devel
+BuildRoot:	%{_tmppath}/%{name}-root
 %description
 %{summary}
 
 %prep
 %setup -q -n %{clname}-%{clver}
-%patch0 -p1
-%patch1
-%patch2 -p1 -b .ppc
+%patch0 -p1 -b .write
+%patch1 -b .cflags
+%patch2 -p1 -b .x86-64
 
 %build
-make create_compressed_fs extract_compressed_fs APPSONLY=1
+%make utils
 
 %install
 rm -rf $RPM_BUILD_ROOT
