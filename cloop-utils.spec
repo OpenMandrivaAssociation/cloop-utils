@@ -15,6 +15,7 @@ Patch0:		cloop-2.06-write-to-file-ASAP.patch
 Patch1:		mkfile-cloop.patch
 Patch2:		cloop-2.06-x86-64-build-fix.patch
 BuildRequires:	zlib-devel
+BuildRoot:	%{_tmppath}/%{name}-root
 %description
 %{summary}
 
