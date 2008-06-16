@@ -1,7 +1,7 @@
 %define clname      cloop
 %define clver       2.06
 %define clminorver  1
-%define release     %mkrel 2
+%define release     %mkrel 3
 
 Name:		%{clname}-utils
 Version:	%{clver}
