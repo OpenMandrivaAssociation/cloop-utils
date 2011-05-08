@@ -4,7 +4,7 @@
 
 Name:		%{clname}-utils
 Version:	%{clver}
-Release:	%{mkrel 1}
+Release:	%mkrel 2
 Summary:	Utilities for the creation and extraction of compressed loop images
 License:	GPLv2
 Group:		File tools
