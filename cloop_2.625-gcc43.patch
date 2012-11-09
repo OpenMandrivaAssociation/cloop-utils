@@ -1,0 +1,10 @@
+--- cloop-2.625/advfs.cc	2006-12-03 15:07:02.000000000 -0800
++++ cloop-2.625/advfs.cc.new	2008-12-08 21:23:19.000000000 -0800
+@@ -52,6 +52,7 @@
+ //#include "utility.h"
+ #include "compress.h"
+ #include "siglock.h"
++#include <climits>
+ 
+ #ifndef __OPTIMIZE__
+ #define __OPTIMIZE__

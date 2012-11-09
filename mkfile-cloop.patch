@@ -1,0 +1,11 @@
+--- Makefile	2007-02-25 13:20:45.000000000 -0800
++++ Makefile.new	2007-04-25 11:57:55.000000000 -0700
+@@ -13,7 +13,7 @@ PATCHLEVEL:=6
+ endif
+ 
+ ifdef APPSONLY
+-CFLAGS:=-Wall -Wstrict-prototypes -Wno-trigraphs -O2 -s -I. -fno-strict-aliasing -fno-common -fomit-frame-pointer 
++CFLAGS:=-Wall -Wstrict-prototypes -Wno-trigraphs -s -I. -fno-strict-aliasing -fno-common -fomit-frame-pointer $(RPM_OPT_FLAGS)
+ endif
+ 
+ KERNOBJ:=compressed_loop.o

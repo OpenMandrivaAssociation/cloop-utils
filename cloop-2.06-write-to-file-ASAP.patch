@@ -1,0 +1,162 @@
+diff -aurN cloop-1.02/create_compressed_fs.c cloop-1.02.jaco/create_compressed_fs.c
+--- cloop-1.02/create_compressed_fs.c	2003-07-18 17:01:38.000000000 +0200
++++ cloop-1.02.jaco/create_compressed_fs.c	2003-10-31 11:54:12.000000000 +0200
+@@ -38,6 +38,8 @@
+  free(cbl);
+ }
+ 
++static int out;
++
+ /* Now using the goto style because it is quicker to read */
+ static struct cb_list *create_compressed_blocks(int handle, unsigned long
+                           blocksize, unsigned long *numblocks)
+@@ -81,7 +83,15 @@
+      fprintf(stderr, "*** Error %d compressing block %lu! (compressed=%p, len=%lu, uncompressed=%p, blocksize=%lu)\n", z_error, i, compressed,len,uncompressed,blocksize);
+      goto error_free_cb_list;
+     }
+-   if((*cbp = malloc(sizeof(struct cb_list)+len))==NULL) /* get another block */
++
++   if (*numblocks)
++     if (write(out, compressed, len) != len)
++       {
++	 perror("writing block");
++	 exit (1);
++       }
++
++   if((*cbp = malloc(sizeof(struct cb_list)+ (*numblocks ? 0 : len)))==NULL) /* get another block */
+     {
+      fprintf(stderr, "*** Out of memory allocating block ptrs (virtual memory exhausted).\n");
+      goto error_free_cb_list;
+@@ -90,7 +100,7 @@
+    /* Print status */
+    fprintf(stderr, "Block# %5lu size %6lu -> %6lu [compression ratio %3lu%%, overall: %3Lu%%]\n", i, total, len, total>0?((len*100)/total):100,total_uncompressed>0?((total_compressed*100)/total_uncompressed):100);
+    (*cbp)->size = len;
+-   memcpy((*cbp)->data, compressed, len);
++   if (*numblocks == 0) memcpy((*cbp)->data, compressed, len);
+    (*cbp)->next=NULL;
+    cbp=&((*cbp)->next);
+   } /* for */
+@@ -111,17 +121,22 @@
+ int main(int argc, char **argv)
+ {
+  int in;
+- unsigned long blocksize;
++ unsigned long blocksize, estimated_size;
+  struct cloop_head head;
+- unsigned long numblocks;
++ unsigned long numblocks, estimated_numblocks;
+  unsigned long long bytes_so_far;
+  unsigned long i;
+  struct cb_list *compressed_blocks,*cbp;
+ 
+- if (argc != 3)
++ if (argc < 3 || argc > 5)
+   {
+-   fprintf(stderr, "Usage: %s filename blocksize(bytes).\n",argv[0]);
+-   fprintf(stderr, "Use '-' as filename for stdin.\n");
++   fprintf(stderr, "Usage: %s <in_file> <blocksize> [<out_file> [<in_size>]]\n",argv[0]);
++   fprintf(stderr, "Options:\n");
++   fprintf(stderr, "   <in_file>    Input (uncompressed) filename. Use '-' for stdin.\n");
++   fprintf(stderr, "   <blocksize>  The number of bytes in a block (eg: 65536)\n");
++   fprintf(stderr, "   <out_file>   The output (compressed) file\n");
++   fprintf(stderr, "   <in_size>    The input filesize in MB. If you use stdin, you can\n");
++   fprintf(stderr, "                give a bigger estimated size (don't be conservative)\n");
+    return 1;
+   }
+ 
+@@ -138,6 +153,8 @@
+    sleep(2);
+   }
+ 
++ estimated_size = argc > 4 ? (atoi(argv[4]) + 1) * 1024 * 1024 : 0;
++
+  if (sizeof(CLOOP_PREAMBLE) > CLOOP_HEADROOM)
+   {
+    fprintf(stderr, "*** Preamble (%u chars) > headroom (%u)\n",
+@@ -153,8 +170,55 @@
+    return 1;
+   }
+ 
++ out = argc > 3 ? open(argv[3], O_CREAT | O_TRUNC | O_WRONLY, 0644) : dup(STDOUT_FILENO);
++
++ if (out < 0)
++  {
++   perror("Opening output");
++   return 1;
++  }
++
++ if (argc > 3)
++   {
++     struct stat buf;
++     if (fstat(in, &buf) == 0 && buf.st_size)
++       {
++	 if (estimated_size != 0) fprintf(stderr, "replacing given size %lu with %lu\n", estimated_size, buf.st_size);
++	 estimated_size = buf.st_size;
++       }
++   }
++
++ estimated_numblocks = numblocks = (estimated_size + 1 + blocksize - 1) / blocksize;
++
++ if (estimated_size) 
++   {
++     size_t to_skip = sizeof(head) + sizeof(loff_t) * (estimated_numblocks + 1);
++     char *skip = alloca(to_skip);
++     memset(skip, 0xFF, to_skip);
++     if (write(out, skip, to_skip) != to_skip)
++       {
++	 perror("writing block");
++	 exit (1);
++       }
++   }
++ else
++   numblocks = 0;
++
+  compressed_blocks = create_compressed_blocks(in, blocksize, &numblocks);
+ 
++ if (estimated_size) 
++   if (numblocks > estimated_numblocks)
++     {
++       fprintf(stderr, "estimated size is not good, it should be at least %f MB (%lu > %lu)\n", (numblocks / (1024. * 1024. / blocksize)), numblocks, estimated_numblocks);
++       exit (1);
++     }
++
++   if (lseek(out, 0, SEEK_SET) != 0)
++     {
++       perror("seeking to the beginning of output file");
++       exit (1);
++     }
++
+  close(in);
+ 
+  memset(head.preamble, 0, sizeof(head.preamble));
+@@ -165,10 +229,10 @@
+  fprintf(stderr, "Block size %lu, number of blocks %lu.\n",
+          blocksize, numblocks);
+ 
+- bytes_so_far = sizeof(head) + sizeof(loff_t) * (numblocks + 1);
++ bytes_so_far = sizeof(head) + sizeof(loff_t) * ((estimated_size ? estimated_numblocks : numblocks) + 1);
+ 
+  /* Write out head... */
+- write(STDOUT_FILENO, &head, sizeof(head));
++ write(out, &head, sizeof(head));
+ 
+  if (!compressed_blocks) return 1;
+ 
+@@ -177,14 +241,15 @@
+   {
+    loff_t tmp;
+    tmp = __cpu_to_be64(bytes_so_far);
+-   write(STDOUT_FILENO, &tmp, sizeof(tmp));
++   write(out, &tmp, sizeof(tmp));
+    if(cbp) { bytes_so_far += cbp->size; cbp=cbp->next; }
+   }
+ 
++ if (estimated_size == 0)
+  /* Now write blocks and free them. */
+  for (i = 0, cbp=compressed_blocks; cbp && i < numblocks; i++)
+   {
+-   if (write(STDOUT_FILENO, cbp->data, cbp->size) != cbp->size)
++   if (write(out, cbp->data, cbp->size) != cbp->size)
+     {
+      perror("writing block");
+      free_cb_list(compressed_blocks);
