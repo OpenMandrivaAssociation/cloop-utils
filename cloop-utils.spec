@@ -4,7 +4,7 @@
 Summary:	Utilities for the creation and extraction of compressed loop images
 Name:		%{clname}-utils
 Version:	2.625
-Release:	8
+Release:	9
 License:	GPLv2
 Group:		File tools
 Url:		http://debian-knoppix.alioth.debian.org/sources/
