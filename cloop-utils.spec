@@ -19,7 +19,7 @@ BuildRequires:	pkgconfig(zlib)
 
 %prep
 %setup -qn %{clname}-%{version}
-%apply_patches
+%autopatch -p1
 
 %build
 %make utils
