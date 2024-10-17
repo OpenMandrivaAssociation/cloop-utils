@@ -7,7 +7,7 @@ Version:	2.625
 Release:	12
 License:	GPLv2
 Group:		File tools
-Url:		http://debian-knoppix.alioth.debian.org/sources/
+Url:		https://debian-knoppix.alioth.debian.org/sources/
 Source0:	http://debian-knoppix.alioth.debian.org/sources/%{clname}_%{version}-%{minver}.tar.gz
 Patch0:		cloop-2.06-write-to-file-ASAP.patch
 Patch1:		mkfile-cloop.patch
