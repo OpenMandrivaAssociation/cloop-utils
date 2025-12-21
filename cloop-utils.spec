@@ -12,6 +12,7 @@ Source0:	http://debian-knoppix.alioth.debian.org/sources/%{clname}_%{version}-%{
 Patch0:		cloop-2.06-write-to-file-ASAP.patch
 Patch1:		mkfile-cloop.patch
 Patch2:		cloop_2.625-gcc43.patch
+BuildRequires:	make
 BuildRequires:	pkgconfig(zlib)
 
 %description
